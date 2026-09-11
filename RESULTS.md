@@ -1,226 +1,179 @@
-# 🚀 Agentic CI/CD Risk Simulation & Predictive Pipeline Defense
 
-An autonomous, multi-layered CI/CD risk management system that combines **LangGraph Agentic Workflows**, **Retrieval-Augmented Generation (RAG)**, **Machine Learning Predictive Analytics**, and **Kubernetes Cloud-Native Infrastructure** to preemptively identify and mitigate continuous integration failures.
+# 📊 Empirical Results & Architectural Defense Documentation
 
-## 📌 Project Overview
+This document records the empirical results, evaluation metrics, and system timing benchmarks for the **Agentic CI/CD Risk Simulation** system.
 
-In high-velocity software engineering teams, broken CI/CD pipelines waste cloud execution credits and delay deployment velocity. This project provides a two-tiered defense framework:
+---
 
-1. **Lightweight Predictive Machine Learning Classifier:** Evaluates pipeline metadata from historical workflow runs via the GitHub REST API to predict build failures prior to exhaustive test suite execution.
-2. **Autonomous LangGraph + RAG AI Agent:** Ingests pipeline configuration files (`.yaml`) and failure build logs (`.txt`) stored in a **ChromaDB** vector database to generate targeted `pytest` regression suites for high-risk modules.
-3. **Cloud-Native Kubernetes Deployment:** Containerized via Docker and deployed onto a local Kubernetes cluster (**Minikube**) using Deployment and NodePort Service manifests to benchmark end-to-end execution latency in an isolated cloud environment.
+## Part A: LangGraph + RAG Autonomous Test Agent
 
-## 🏗️ System Architecture
+### 1. Architecture Specification
+
+* **Workflow Framework:** Directed 3-node `StateGraph` using `langgraph`
+* **Graph Flow:** `retrieve_context` → `analyze_risk` → `generate_tests` → `END`
+* **Vector Store Engine:** `ChromaDB` (persistent local vector store)
+* **LLM Model:** `gemini-3.6-flash`
+
+  * Temperature: `0.1`
+  * Timeout: `30s`
+* **Context Ingestion:** Metadata-tagged YAML configurations (`source: config`) and raw failure build logs (`source: log`)
+
+### 2. Direct Execution Performance
+
+| Trial       | Execution Time |
+| ----------- | -------------: |
+| Trial 1     |         84.12s |
+| Trial 2     |         81.05s |
+| Trial 3     |         82.66s |
+| **Average** |     **82.61s** |
+
+**Average Execution Time:** **82.61 seconds** across 3 full graph invocations.
+
+### Latency Bottleneck Analysis
+
+Each execution cycle includes:
+
+1. A vector similarity query against ChromaDB
+2. A synchronous external HTTPS request to Google's Gemini API for **Risk Analysis**
+3. A second synchronous external HTTPS request to Google's Gemini API for **Test Code Synthesis**
+
+The two external LLM calls represent the primary source of latency in the agentic workflow.
+
+---
+
+## Part B: GitHub Actions Pipeline Failure Predictor
+
+### 1. Dataset & Feature Engineering
+
+* **Data Source:** Live GitHub Actions REST API (`/repos/{owner}/{repo}/actions/runs`)
+* **Target Label (`y`):**
+
+  * `1` = failure
+  * `0` = success
+* **Engineered Features (`X`):**
+
+  1. `duration_norm`: Standard Z-score normalized build duration
+  2. `is_pr`: Binary indicator for `pull_request` event triggers
+
+     * `1` = Pull Request
+     * `0` = Direct Push
+* **Data Split:** 80% Training Set / 20% Held-Out Test Set
+
+The duration feature is normalized using:
+
+$$
+Z = \frac{x - \mu}{\sigma}
+$$
+
+### 2. Evaluation Metrics on Held-Out Test Set
 
 ```text
-                                +-----------------------------+
-                                | Developer Pushes Code / PR  |
-                                +--------------+--------------+
-                                               |
-                                               v
-                                +-----------------------------+
-                                |  GitHub Actions REST API   |
-                                +--------------+--------------+
-                                               |
-                                               v
-                                +-----------------------------+
-                                | ML Predictor (scikit-learn) |
-                                |  Flags High Risk Pipelines |
-                                +--------------+--------------+
-                                               |
-                                               v
-                   +-------------------------------------------------------+
-                   |          LangGraph Autonomous Agent Workflow          |
-                   |                                                       |
-                   |  [ Node 1: Vector Search ] (ChromaDB Configs & Logs)  |
-                   |                           |                           |
-                   |  [ Node 2: Risk Analysis ] (Gemini 3.6 Flash LLM)     |
-                   |                           |                           |
-                   |  [ Node 3: Test Synth ]    (pytest Code Generation)   |
-                   +---------------------------+---------------------------+
-                                               |
-                                               v
-                                +-----------------------------+
-                                |  Kubernetes Cluster Pod     |
-                                |  (Flask Service @ Port 5000)|
-                                +-----------------------------+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.75      0.60      0.67        10
+           1       0.50      0.67      0.57         6
+
+    accuracy                           0.62        16
+   macro avg       0.62      0.63      0.62        16
+weighted avg       0.66      0.62      0.63        16
 ```
 
-## 🗂️ Project Structure
+### 3. Metric Interpretation
 
-```text
-agentic-cicd-risk/
-│
-├── agent/                         # Autonomous AI Brain (LangGraph + RAG)
-│   ├── build_graph.py             # LangGraph workflow orchestration & Flask REST API
-│   ├── graph_nodes.py             # Directed graph nodes (Retrieve, Analyze, Generate)
-│   └── retrieval_store.py         # ChromaDB vector store builder & query engine
-│
-├── classifier/                    # Machine Learning Pipeline Failure Predictor
-│   ├── fetch_github_data.py       # Ingests live runs from GitHub Actions REST API
-│   ├── feature_engineering.py     # Feature extraction & z-score normalization
-│   ├── train_classifier.py        # Trains Logistic Regression model & evaluates metrics
-│   └── raw_runs_data.csv          # Dataset of historical pipeline executions
-│
-├── deployment/                    # Cloud Infrastructure Manifests
-│   ├── Dockerfile                 # Container packaging definition
-│   ├── k8s-deployment.yaml        # Kubernetes Deployment specification
-│   └── k8s-service.yaml           # Kubernetes NodePort Service binding
-│
-├── benchmark/                     # Architectural Performance Benchmarking
-│   ├── run_direct.py              # Bare-metal Python execution time profiler
-│   ├── run_via_minikube.py        # Kubernetes cluster network endpoint benchmark
-│   └── benchmark_results.json     # Consolidated timing metrics output
-│
-├── generated_tests/               # Auto-generated pytest regression output suites
-├── sample_data/                   # CI configs (.yaml) and build logs (.txt)
-├── results/                       # Classifier evaluation output metrics
-├── RESULTS.md                     # Detailed empirical evaluation documentation
-├── README.md                      # Primary project documentation
-└── requirements.txt               # Python package dependencies
-```
+| Metric        | Class 1 (Failure) |
+| ------------- | ----------------: |
+| **Recall**    |          **0.67** |
+| **Precision** |          **0.50** |
+| **F1-score**  |          **0.57** |
 
-## ⚡ Quickstart Guide
+**Failure Class Recall (0.67):** The model correctly identified approximately **67% of actual pipeline failures** in the held-out test set.
 
-### 1. Prerequisites & Virtual Environment
+For CI/CD risk management, recall is particularly important because failing to identify a genuinely risky pipeline can allow problematic changes to proceed through the pipeline.
 
-Ensure you are running inside a **Linux/WSL2** environment with **Python 3.10+**, **Docker**, and **Minikube** installed.
+**Failure Class Precision (0.50):** Of the pipelines predicted as failures, **50% were actual failures** in the held-out test set, indicating that the classifier also produces false-positive risk alerts.
 
-```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/agentic-cicd-risk.git
-cd agentic-cicd-risk
+> **Important:** These metrics are based on a relatively small held-out test set of **16 samples**, so they should be interpreted as an experimental benchmark rather than a production-level performance estimate.
 
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate
+---
 
-# Install dependencies
-pip install -r requirements.txt
-```
+## Part C: Kubernetes (Minikube) Cloud-Native Deployment
 
-### 2. Environment Configuration
+### 1. Infrastructure Architecture
 
-Create a `.env` file in the root directory:
+* **Containerization:** Docker container based on `python:3.10-slim`
+* **Orchestration:** Kubernetes `Deployment` with 1 replica
+* **Secret Injection:** Active `GEMINI_API_KEY` injected into the container environment
+* **Networking:** Kubernetes `Service` configured with `NodePort: 30007`
+* **Application Port:** Flask API exposed on port `5000`
+* **Cluster Environment:** Minikube control-plane node using the Docker driver
 
-```env
-GEMINI_API_KEY="your_actual_gemini_api_key"
-GITHUB_TOKEN="your_actual_github_token"
-```
+### 2. End-to-End Cluster Benchmark Results
 
-> **Note:** Never commit your `.env` file or expose API keys in the repository.
+Requests were routed through the active Minikube NodePort tunnel into the isolated running pod.
 
-### 3. Initialize Vector Store (RAG)
+| Pod Run     | Execution Time |
+| ----------- | -------------: |
+| Run 1       |         87.24s |
+| Run 2       |         72.35s |
+| Run 3       |         38.92s |
+| **Average** |     **66.17s** |
 
-Build the ChromaDB persistent store from sample workflow YAML files and build log files:
+**Average Pod Execution Time:** **66.17 seconds** across 3 benchmark runs.
 
-```bash
-python agent/retrieval_store.py
-```
+### 3. Architectural Verification
 
-### 4. Fetch Data & Train ML Classifier
+The following components were successfully verified:
 
-Pull historical runs from the GitHub REST API, engineer normalized duration and event features, and train the model:
+* End-to-end HTTP `POST` JSON ingestion through the `/generate` endpoint
+* ChromaDB vector retrieval operating inside the isolated container filesystem
+* Live outbound HTTPS traffic from the Kubernetes pod to external Gemini API endpoints
+* Successful execution of the LangGraph workflow inside the deployed pod
 
-```bash
-# Fetch raw pipeline data
-python classifier/fetch_github_data.py
+---
 
-# Train classifier and evaluate on 20% held-out test split
-python classifier/train_classifier.py
-```
+## 🎯 Summary Benchmark Table
 
-### 5. Run Direct Execution Benchmark
+| System Component           | Execution Model            | Average Latency / Performance Metric |
+| -------------------------- | -------------------------- | -----------------------------------: |
+| **Classifier Model**       | Logistic Regression        |                     **Recall: 0.67** |
+|                            |                            |                  **Precision: 0.50** |
+|                            |                            |                   **Accuracy: 0.62** |
+| **Agent Direct Execution** | Local Bare-Metal Python    |                           **82.61s** |
+| **Agent Pod Execution**    | Minikube Kubernetes Tunnel |                           **66.17s** |
 
-Profile execution speed running natively on bare metal:
+---
 
-```bash
-python benchmark/run_direct.py
-```
+## 📌 Key Findings
 
-## ☁️ Kubernetes Cluster Deployment & Benchmarking
+### Predictive Layer
 
-### 1. Start Cluster & Build Container
+The Logistic Regression classifier achieved:
 
-```bash
-# Boot Minikube
-minikube start --cpus=2 --memory=4000
+* **0.67 recall** for pipeline failures
+* **0.50 precision** for predicted failures
+* **0.62 overall accuracy**
 
-# Build image directly inside Minikube
-minikube image build -t agentic-cicd-image:latest -f deployment/Dockerfile .
-```
+The results demonstrate the feasibility of using lightweight pipeline metadata to identify potentially risky CI/CD executions.
 
-### 2. Deploy Manifests to Kubernetes
+### Agentic Layer
 
-```bash
-# Apply deployment and service
-kubectl apply -f deployment/k8s-deployment.yaml
-kubectl apply -f deployment/k8s-service.yaml
+The LangGraph + RAG workflow averaged **82.61 seconds** in direct execution across three full invocations.
 
-# Verify pod status
-kubectl get pods
-```
+The primary latency source is the pair of synchronous Gemini API calls used for risk analysis and test synthesis.
 
-### 3. Benchmark Cluster Endpoint
+### Kubernetes Layer
 
-Expose the NodePort service endpoint:
+The same workflow averaged **66.17 seconds** when executed through the Minikube deployment and NodePort tunnel.
 
-```bash
-minikube service agentic-cicd-service --url
-```
+This benchmark demonstrates successful containerized and orchestrated execution of the complete agent pipeline, including internal vector retrieval and external LLM communication.
 
-In a separate terminal window, run the endpoint benchmark script:
+---
 
-```bash
-python benchmark/run_via_minikube.py
-```
+## 🧪 Benchmark Notes
 
-## 📊 Empirical Metrics Summary
+The reported latency values represent the measured end-to-end execution time of the experimental workflow under the tested environment.
 
-| Evaluation Dimension            |                                         Metric / Output |
-| ------------------------------- | ------------------------------------------------------: |
-| **ML Failure Recall (Class 1)** | **0.67** — Successfully caught 67% of pipeline failures |
-| **ML Model Accuracy**           |                                                **0.62** |
-| **Direct Execution Time (Avg)** |                  **82.61 seconds** — 3 graph iterations |
-| **Minikube Pod Latency (Avg)**  |        **66.17 seconds** — End-to-end cluster tunneling |
+Because the benchmark includes external LLM API calls, observed latency can vary based on network conditions, API response time, and model-side processing.
 
-For the complete empirical breakdown and interview defense scripts, refer to [`RESULTS.md`](./RESULTS.md).
-
-## 🔑 Key Technologies
-
-* **Python 3.10+**
-* **LangGraph**
-* **RAG**
-* **ChromaDB**
-* **Gemini 3.6 Flash**
-* **scikit-learn**
-* **Logistic Regression**
-* **pytest**
-* **Flask**
-* **Docker**
-* **Kubernetes**
-* **Minikube**
-* **GitHub Actions REST API**
-
-## 🎯 Core Capabilities
-
-* Predictive CI/CD failure detection
-* Historical pipeline analysis
-* RAG-based retrieval of relevant CI configurations and failure logs
-* Autonomous risk analysis using LangGraph
-* Automated pytest regression test generation
-* Containerized deployment with Docker
-* Kubernetes-based execution
-* End-to-end performance benchmarking
-* Separation of predictive ML and agentic AI layers
-
-## 📈 Evaluation
-
-The system evaluates both **predictive performance** and **execution architecture**:
-
-* The ML classifier is evaluated using a held-out test split.
-* Failure detection performance is measured using **Class 1 recall**.
-* The agentic workflow is benchmarked through repeated graph executions.
-* Kubernetes deployment is compared against direct execution to evaluate infrastructure overhead and end-to-end latency.
-
-See [`RESULTS.md`](./RESULTS.md) for the detailed evaluation, results, and interview defense material.
+The results are therefore best treated as **empirical measurements of this experimental setup**, rather than generalized performance guarantees.
