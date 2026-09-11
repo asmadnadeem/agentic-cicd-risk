@@ -1,0 +1,4 @@
+2023-10-24T12:05:14.123Z [ERROR] Failed to compile module 'auth_middleware.js'.
+2023-10-24T12:05:14.124Z [ERROR] TypeError: Cannot read properties of undefined (reading 'verifyToken')
+2023-10-24T12:05:14.125Z [WARN] Skipping subsequent tests in user_routes.spec.js due to compilation failure.
+2023-10-24T12:05:15.001Z [INFO] Process exited with code 1.

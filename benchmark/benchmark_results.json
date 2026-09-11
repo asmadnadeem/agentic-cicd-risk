@@ -1,0 +1,5 @@
+{
+"direct_execution_avg_sec": 82.61,
+"minikube_execution_avg_sec": 66.17,
+"notes": "Minikube Pod execution successfully processed all 3 LangGraph node invocations through cluster NodePort routing."
+}

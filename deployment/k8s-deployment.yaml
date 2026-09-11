@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: agentic-cicd-deployment
+labels:
+app: agentic-cicd
+spec:
+replicas: 1
+selector:
+matchLabels:
+app: agentic-cicd
+template:
+metadata:
+labels:
+app: agentic-cicd
+spec:
+containers:
+- name: agentic-cicd-container
+image: agentic-cicd-image:latest
+imagePullPolicy: Never
+ports:
+- containerPort: 5000
+env:
+- name: GEMINI_API_KEY
+value: "REPLACE_WITH_YOUR_ACTUAL_GEMINI_KEY"

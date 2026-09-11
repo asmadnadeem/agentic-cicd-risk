@@ -1,0 +1,9 @@
+langgraph
+langchain-google-genai
+chromadb
+scikit-learn
+pandas
+requests
+python-dotenv
+flask
+pytest
